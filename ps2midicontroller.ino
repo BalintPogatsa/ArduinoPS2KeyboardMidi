@@ -171,7 +171,7 @@ void setup() {
   // Configure the keyboard library
   keyboard.begin(DATAPIN, IRQPIN);
 
-
+  delay(500);
   keyboard.typematic(0, 0);  // Get fastest
   //keyboard.typematic(31, 3);  // Get slowest
 }
@@ -197,6 +197,9 @@ void loop() {
 
     uint16_t keycode = c & 0xFF;
     bool keyDown = !(c & PS2_BREAK);
+
+    bool setLeds = false;
+    uint8_t ledValue = 0;
 
     if (keycode < 0 || keycode > 255)
       return;
@@ -241,54 +244,31 @@ void loop() {
           MIDI.sendControlChange(kb.midiCode, 0, 1);
         toggleVal = !toggleVal;
 
+        setLeds = true;
+        
+        if (toggleVal)
+          ledValue = 7;
+        else
+          ledValue = 0;
+
       } else if (kb.type == RANGE) {
         byte &val = rangeValues[kb.rangeIndex];
         if (kb.increments && val < 127) val++;
         else if (!kb.increments && val > 0) val--;
         MIDI.sendControlChange(kb.midiCode, val, 1);
+
+        setLeds = true;
+
+        ledValue = val >> 4;
       }
 
 
-      // // ---- KEY PRESS ----
-      // switch (kb.type) {
-
-      //   case 1:
-      //     MIDI.sendControlChange(kb.midiCode, kb.midiValue, 1);
-      //     break;
-
-      //   case 2:
-      //     bool &toggleVal = toggleValues[kb.rangeIndex];
-
-      //     if (!toggleVal)
-      //       MIDI.sendControlChange(kb.midiCode, 1, 1);
-      //     else
-      //       MIDI.sendControlChange(kb.midiCode, 0, 1);
-      //     toggleVal = !toggleVal;
-      //     break;
-
-      //   case 3:
-      //       byte &val = rangeValues[kb.rangeIndex];
-      //       if (kb.increments && val < 127) val++;
-      //       else if (!kb.increments && val > 0) val--;
-      //       MIDI.sendControlChange(kb.midiCode, val, 1);
-      //       break;
-
-      //   case 4:
-      //     //if (!kb.state) {
-      //       MIDI.sendNoteOn(42, 127, 1);
-      //       delay(500);
-      //       //kb.state = true;
-      //     //}
-
-
-      //     break;
-      // }
+      if (setLeds)
+      {
+        keyboard.setLock(ledValue);
+      }
     }
 
-    //               MIDI.sendNoteOn(42, 127, 1);    // Send a Note (pitch 42, velo 127 on channel 1)
-    //         delay(500);		            // Wait for a second
-    //         MIDI.sendNoteOff(42, 0, 1);     // Stop the note
-    // delay(500);
   }
 
   delay(10);  // minimal debounce
