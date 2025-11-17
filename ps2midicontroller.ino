@@ -111,9 +111,9 @@ const KeyEntry keyMap[] PROGMEM = {
 
 
   // ----- TOGGLE
-  { PS2_KEY_SYSRQ, { TOGGLE, 13, 0, 0, 0, 0 } },
+  { PS2_KEY_PRTSCR, { TOGGLE, 13, 0, 0, 0, 0 } },
   { PS2_KEY_SCROLL, { TOGGLE, 26, 0, 0, 0, 1 } },
-  { PS2_KEY_BREAK, { TOGGLE, 34, 0, 0, 0, 2 } },
+  { PS2_KEY_PAUSE, { TOGGLE, 34, 0, 0, 0, 2 } },
   { PS2_KEY_SINGLE, { TOGGLE, 39, 0, 0, 0, 3 } },
 
   // ----- RANGE
@@ -166,6 +166,10 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 
 void setup() {
 
+  // TODO: send init command to have the controller and the synth in the same default state
+  // delay is switched on during startup
+  toggleValues[0] = true;
+
   MIDI.begin();
 
   // Configure the keyboard library
@@ -174,6 +178,14 @@ void setup() {
   delay(500);
   keyboard.typematic(0, 0);  // Get fastest
   //keyboard.typematic(31, 3);  // Get slowest
+
+  uint8_t lockStatus = keyboard.getLock();
+
+  // set fix NUM lock (we are using the num keys)
+  lockStatus = (lockStatus & ~0b00000010) | (3 & 0b00000010);
+
+  // skip numlock, not to influence numpad keys
+  keyboard.setLock(lockStatus);
 }
 
 bool getKeyBehavior(uint8_t scanCode, KeyBehavior &out) {
@@ -222,6 +234,8 @@ void loop() {
       if (kb.type == PIANO) {
         MIDI.sendNoteOff(kb.midiCode, 0, 1);
 
+        bool &pianoVal = togglePianoKeys[kb.rangeIndex];
+        pianoVal = false;
       }
     } else {
 
@@ -247,7 +261,7 @@ void loop() {
         setLeds = true;
         
         if (toggleVal)
-          ledValue = 7;
+          ledValue = 1;
         else
           ledValue = 0;
 
@@ -259,13 +273,22 @@ void loop() {
 
         setLeds = true;
 
-        ledValue = val >> 4;
+        ledValue = val;
       }
 
 
       if (setLeds)
       {
-        keyboard.setLock(ledValue);
+        uint8_t lockStatus = keyboard.getLock();
+
+        //PS2_LOCK_SCROLL  0x01
+        //PS2_LOCK_NUM     0x02
+        //PS2_LOCK_CAPS    0x04
+
+        lockStatus = (lockStatus & ~0b00000001) | (ledValue & 0b00000001);
+
+        // skip numlock, not to influence numpad keys
+        keyboard.setLock(lockStatus);
       }
     }
 
