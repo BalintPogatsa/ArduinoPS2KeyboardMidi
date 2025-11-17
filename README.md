@@ -11,9 +11,9 @@ MIDI out wiring
 
 
 BOM:
-Arduino
-PS/2 Keyboard
-PS/2 connector female
-MIDI connector female (or directly a cable with the male connector)
-2x 220 Ohm resistor
-Wires
+- Arduino
+- PS/2 Keyboard
+- PS/2 connector female
+- MIDI connector female (or directly a cable with the male connector)
+- 2x 220 Ohm resistor
+- Wires
